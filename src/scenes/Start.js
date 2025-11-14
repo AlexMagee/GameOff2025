@@ -1,3 +1,10 @@
+var dialogue;
+fetch('./src/scenes/Start_dialogue.json')
+    .then(res => res.json())
+    .then(data => {
+        dialogue = data;
+    })
+
 export class Start extends Phaser.Scene {
 
     constructor() {
@@ -18,10 +25,7 @@ export class Start extends Phaser.Scene {
 
         this.background = this.add.tileSprite(640, 360, 320, 320, 'background');
 
-        this.loot = [
-            this.add.sprite(640 - 16, 200 + 16, 'entities', 4),
-            // this.add.sprite(132, 100, 'entities', 5)
-        ];
+        this.loot = [];
 
         this.player = this.add.sprite(164, 100, 'entities');
 
@@ -37,12 +41,31 @@ export class Start extends Phaser.Scene {
         // Fix character in level
         // this.player.x = Math.min(800 - 16, Math.max(480 + 16, this.player.x));
         this.player.y = Math.max(200 + 16, Math.min(520 - 16, this.player.y));
+
+        this.dialogue = this.add.text(640, 580, dialogue.intro_0, { fontFamily: "Montserrat", fontSize: 36 }).setOrigin(0.5, 0.5)
+        this.timers = [];
+        this.timers[0] = 5;
     }
 
-    update() {
+    update(time, delta) {
+        // Process timers
+        this.timers.forEach(function(element, index, array) {
+            if(element == -1) return;
+            array[index] -= delta / 1000;
+            if(array[index] < 0) array[index] = 0;
+        })
+
+        if(this.timers[0] == 0) {
+            this.dialogue.setText(dialogue.intro_1);
+            this.timers[0] = -1;
+            
+            this.loot.push(this.add.sprite(640 - 16, 168 + 16, 'entities', 4));
+        }
+
         this.loot.forEach((l) => {
             l.y += 0.25;
             l.y = Math.min(456 - 16, l.y);
+            if(l.y == 456 - 16) this.dialogue.setText(dialogue.intro_2);
         })
 
         this.waves.tilePositionY -= 0.25;
