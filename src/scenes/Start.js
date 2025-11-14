@@ -13,6 +13,7 @@ export class Start extends Phaser.Scene {
 
     preload() {
         this.load.image('background', 'assets/background.png');
+        this.load.image('inventory_background', 'assets/inventory.png');
         this.load.spritesheet('entities', 'assets/entities.png', { frameWidth: 32, frameHeight: 32 });
         this.load.spritesheet('waves', 'assets/waves.png', { frameWidth: 320, frameHeight: 320 });
 
@@ -25,7 +26,17 @@ export class Start extends Phaser.Scene {
 
         this.background = this.add.tileSprite(640, 360, 320, 320, 'background');
 
-        this.loot = [];
+        this.loot;
+
+        // inventory
+        this.add.sprite(640, 100, 'inventory_background');
+        this.inventory = [
+            this.add.sprite(640 - 130, 100, 'entities', 6),
+            this.add.sprite(640 - 44, 100, 'entities', 6),
+            this.add.sprite(640 + 44, 100, 'entities', 6),
+            this.add.sprite(640 + 130, 100, 'entities', 6)
+        ];
+
 
         this.player = this.add.sprite(164, 100, 'entities');
 
@@ -45,6 +56,8 @@ export class Start extends Phaser.Scene {
         this.dialogue = this.add.text(640, 580, dialogue.intro_0, { fontFamily: "Montserrat", fontSize: 36 }).setOrigin(0.5, 0.5)
         this.timers = [];
         this.timers[0] = 5;
+
+        this.hasCollected = false;
     }
 
     update(time, delta) {
@@ -59,14 +72,18 @@ export class Start extends Phaser.Scene {
             this.dialogue.setText(dialogue.intro_1);
             this.timers[0] = -1;
             
-            this.loot.push(this.add.sprite(640 - 16, 168 + 16, 'entities', 4));
+            this.loot = this.add.sprite(640 - 16, 168 + 16, 'entities', 4);
         }
 
-        this.loot.forEach((l) => {
-            l.y += 0.25;
-            l.y = Math.min(456 - 16, l.y);
-            if(l.y == 456 - 16) this.dialogue.setText(dialogue.intro_2);
-        })
+        if(this.timers[1] != null && this.timers[1] == 0) {
+            this.dialogue.setText(dialogue.intro_4);
+            this.timers[1] = -1;
+        }
+
+        if(this.loot != null) {
+            this.loot.y = Math.min(456 - 16, this.loot.y + 0.25);
+            if(this.loot.y == 456 - 16) this.dialogue.setText(dialogue.intro_2);
+        }
 
         this.waves.tilePositionY -= 0.25;
 
@@ -109,6 +126,35 @@ export class Start extends Phaser.Scene {
         }
         if(position[0] == this.player.x && position[1] == this.player.y) {
             this.player.stop('running');
+        }
+
+        if(this.input.keyboard.addKey("E").isDown) {
+            if (!this.hasCollected && this.loot != null && this.loot.y == 456 - 16) {
+                this.hasCollected = true;
+                const target_id = 4;
+                if(this.inventory[0].frame.name == 6) {
+                    this.inventory[0].setFrame(target_id);
+                } else if(this.inventory[1].frame.name == 6) {
+                    this.inventory[1].setFrame(target_id);
+                } else if(this.inventory[2].frame.name == 6) {
+                    this.inventory[2].setFrame(target_id);
+                } else if(this.inventory[3].frame.name == 6) {
+                    this.inventory[3].setFrame(target_id);
+                } else {
+                    console.log("Inventory is full");
+                    this.hasCollected = false;
+                }
+                if(this.hasCollected) {
+                    this.loot.destroy(true);
+                    this.loot = null;
+                    this.dialogue.setText(dialogue.intro_3);
+                    this.timers[1] = 3;
+                }
+            }
+        }
+
+        if(this.input.keyboard.addKey("E").isUp && this.hasCollected) {
+            this.hasCollected = false;
         }
     }
     
